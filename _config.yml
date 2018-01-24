@@ -6,7 +6,7 @@ uploadurl: https://goo.gl/forms/zJJHEmJfDYvBbYn63
 mainhosturl: http://www.ntpu.edu.tw/econ/
 cohosturl: https://www.facebook.com/Emajortaiwanforu/
 sponsorurl: https://www.facebook.com/groups/518140268277463/
-google_analytics: 
+google_analytics:  #TBA
 
 registrationdeadline: 2018/03/30
 uploaddeadline: 2018/06/01
@@ -21,7 +21,7 @@ description: > # this means to ignore newlines until "baseurl:"
 
 twitter_username: macrod68
 github_username:  macrod68
-facebook_pagename:
+facebook_pagename: #TBA
 
 sass:
     style: compressed

@@ -1,0 +1,81 @@
+---
+layout: default
+---
+
+  <div class="section no-pad-bot" id="index-banner">
+    <div class="container">
+      <br><br>
+      <h1 class="header center orange-text">{{ site.title }}</h1>
+      <div class="row center">
+        <h5 class="header col s12 light">{{ content }}</h5>
+      </div>
+
+      <div class="row center">
+        <a href="{{ site.registrationurl | escape }}" id="download-button" class="btn-large waves-effect waves-light orange" target="_blank">按我報名</a>
+      </div>
+      <br><br>
+
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+
+      <!--   Icon Section   -->
+      <div class="row">
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center light-blue-text"><i class="material-icons">theaters</i></h2>
+            <h5 class="center">參賽作品</h5>
+
+            <p class="center">以下主題二擇一，製作6分鐘以內短片<br>(1)介紹及分析自選經濟議題<br>(2)以高中生為對象介紹本系特色</p>
+          </div>
+        </div>
+
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center light-blue-text"><i class="material-icons">local_atm</i></h2>
+            <h5 class="center">獎金</h5>
+
+            <p class="light" style="text-align:center">
+              第一名： 八千元（一組）<br>
+              第二名： 五千元（一組）<br>
+              第三名： 三千元（一組）</p>
+          </div>
+        </div>
+
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center light-blue-text"><i class="material-icons">school</i></h2>
+            <h5 class="center">迷你課程</h5>
+            <p class="light">配搭
+              <a href="https://tpemartin.github.io/Multimedia-Publication-of-Economic-Issues/" target="_blank">「經濟時事與多媒體」</a>課程做中學，拿學分又拿獎金。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    </div>
+    <div style="background: #ddd">
+    <div class="container last-post">
+    <section>
+        <h5>最新消息</h5>
+        <ul class="collection">
+        {% for post in site.posts %}
+        <li class="collection-item avatar">
+          {% assign date_format = site.minima.date_format | default: "%m/%d" %}
+          <div class="date-post">{{ post.date | date: date_format }}</div>
+          <span class="title"><a class="post-link" href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></span>
+          <p>
+             {{ post.content | truncatewords: 10 }}
+          </p>
+          <a href="{{ post.url | relative_url }}" class="secondary-content"><i class="material-icons">navigate_next</i></a>
+        </li>
+        {% endfor %}
+        </ul>
+    </section>
+    </div>
+</div>
+
+  </div>

@@ -1,0 +1,27 @@
+title: 2018 經濟數據分析部落客競賽
+headtitle: 2018 經濟數據分析部落客競賽
+registrationurl: https://goo.gl/forms/IH6mMU5zSZI3Lxie2
+votingurl: https://goo.gl/forms/pr2kwKHT6K5xKvE92
+uploadurl: https://goo.gl/forms/zJJHEmJfDYvBbYn63
+mainhosturl: http://www.ntpu.edu.tw/econ/
+cohosturl: https://www.facebook.com/Emajortaiwanforu/
+sponsorurl: https://www.facebook.com/groups/518140268277463/
+google_analytics: 
+
+registrationdeadline: 2018/03/30
+uploaddeadline: 2018/06/01
+exhibitionperiod: 2018/06/06-06/10
+outcomeannouncedate: 2018/06/12
+awarddate: 另行公佈
+
+author: 國立臺北大學。經濟學系
+email: mtlin@gm.ntup.edu.tw
+description: > # this means to ignore newlines until "baseurl:"
+  2017 國立臺北大學第四屆經濟數據分析部落客競賽（原「經濟．數據分析競賽」）。
+
+twitter_username: macrod68
+github_username:  macrod68
+facebook_pagename:
+
+sass:
+    style: compressed

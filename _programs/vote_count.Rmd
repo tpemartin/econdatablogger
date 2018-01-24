@@ -1,0 +1,215 @@
+---
+title: "經濟播客投票計算"
+author: "林茂廷"
+date: "December 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=F, warning=F, results = 'hide')
+library(readxl)
+library(data.table)
+library(magrittr)
+library(dplyr)
+library(googlesheets)
+library(stringr)
+library(plotly)
+library(purrr)
+library(knitr)
+```
+
+## 引入合格名單
+
+### 排除不合格年級
+```{r}
+sheet_list<-excel_sheets("data/學生名單-經濟播客參考.xlsx") %>% as.data.table()
+sheet_list<-sheet_list[!(. %in% c("輔系","進修-輔系","經博"))]
+sheet_list
+```
+
+### 整合所有有效名單
+```{r}
+yyyyfun<-function(x){
+    x[1]<-as.character(as.numeric(x[1])+1911)
+    paste0(x,collapse="")
+}
+
+alleconstudents<-data.frame()
+# 主修經濟
+#econ_major<-sheet_list
+for(i in 1:dim(sheet_list)[1]){
+  econstudents <- read_excel("data/學生名單-經濟播客參考.xlsx",sheet=as.character(sheet_list[i]))
+  
+  ### 雙主修 修改系級欄位名稱
+  if(sheet_list[i] %in% sheet_list[c(3,9),.]){
+    econstudents %>% 
+      select(學生原屬系級,學號,姓名) %>%
+      rename(系級=學生原屬系級) -> econstudents
+  } else {
+    ### 學士班丶進修丶及碩班
+    
+    ### 更改 姓名欄位名稱
+    econstudents %<>%
+        rename(姓名=中文姓名)
+    
+    ### 轉換出生年月日成yyyymmdd
+    
+    econstudents %$% strsplit(出生日期,"[.]") %>% 
+      map(yyyyfun) %>% unlist -> econstudents$yyyymmdd
+    
+    ### 進修部 增加系級欄位
+    if(i %in% 5:8){
+      econstudents %<>% mutate(系級=sheet_list[i,.]) 
+    }
+  }
+   
+  ### 整合學生名單
+  alleconstudents %<>% bind_rows(econstudents)
+}
+
+### 原始Excel名單有多出第一行空行會形成NA資料，必需剔除
+alleconstudents %>% filter(!is.na(學號)) %>%
+  select(-X__1) -> legitimate_voter
+```
+
+### 引入Google投票表單
+```{r }
+#
+gs_auth()
+vote_data_gs<-gs_url("https://docs.google.com/spreadsheets/d/1VPr8CmhYxyeA_JUK6ZpBb0ChutNRVSEUupZNUahLB1s/edit#gid=659291211")
+vote_data<-gs_read(vote_data_gs)
+vote_data %<>% rename(yyyymmdd=`出生西元年月日（驗證本人用）`,
+                      姓名.y=姓名)
+```
+
+### 合併投票與學生名單
+```{r 合格學生投票狀況valid_vote_data}
+### 有yyyymmdd名單
+voter_withbday <- legitimate_voter %>% filter(!is.na(yyyymmdd))
+### 沒yyyymmdd名單（外系學生）
+voter_nobday<-legitimate_voter %>% filter(is.na(yyyymmdd))
+
+voter_withbday %<>% as_tibble()
+voter_withbday %>% left_join(vote_data,by=c("學號","yyyymmdd")) %>%
+  select(Timestamp,`Email Address`,姓名,系級,請選擇你最喜歡的影片二部,姓名.y) ->
+  valid_vote_data1 # 保留線上投票者姓名 因學校名單有時名字會出不來。
+
+voter_nobday %>% left_join(vote_data, by=c("學號")) %>%
+  select(Timestamp,`Email Address`,姓名,系級,請選擇你最喜歡的影片二部,姓名.y) ->
+  valid_vote_data2
+
+valid_vote_data <- bind_rows(valid_vote_data1,valid_vote_data2)
+```
+
+
+### 計算投票結果
+```{r 有效投票人資料valid_ballot}
+valid_ballot <- valid_vote_data %>% filter(!is.na(請選擇你最喜歡的影片二部))
+
+valid_ballot %$%
+  str_replace_all(請選擇你最喜歡的影片二部,
+                                          ", by Amor",
+                                          " by Amor") %>%
+  str_c(sep = ", ", collapse = ", ") %>%
+  str_split(", ") %>% unlist %>%
+  as_tibble -> voting_outcome
+voting_outcome
+```
+有效票數: `r dim(valid_ballot)[1]`
+
+### 前三名隊伍
+```{r, results='asis'}
+tot<-dim(voting_outcome)[1]
+voting_outcome$value %<>% as.factor()
+
+voting_outcome %>% group_by(value) %>%
+  summarise(支持率=n()/tot,票數=n()) %>%
+  arrange(desc(支持率)) -> support_rate 
+
+support_rate %>% kable(col.names = c("隊伍","得票率","票數")) 
+
+support_rate %>% top_n(3,支持率) -> top3_teams
+```
+
+
+目前有`r dim(vote_data)[1]`人投票，合格選民`r dim(valid_ballot)[1]` 人。在一人最多可選2部片下，共投出`r sum(support_rate$票數)`張影片支持票，前三名隊伍囊括`r sum(top3_teams$票數)`張票. 
+
+```{r}
+support_rate %>% plot_ly() %>%
+  add_bars(y=~value,x=~支持率) 
+#  api_create(filename = "2017podcastvoting")
+```
+
+### 誰在投票
+
+```{r, results='asis'}
+valid_ballot %>% group_by(系級) %>%
+  summarise(投票人數=n()) -> whoisvoting1 
+whoisvoting1 %$%
+  str_extract(系級, "[碩1234]") -> whoisvoting1$年級
+
+whoisvoting1 %>% group_by(年級) %>%
+  summarise(投票人數=sum(投票人數)) %>%
+  kable()
+```
+
+### 各系級支持影片前三名
+```{r, eval=FALSE}
+valid_vote_data$年級<- valid_vote_data %$%
+  str_extract(系級, "[碩1234]")
+
+valid_vote_data %>% group_by(年級) %$%
+  str_replace_all(請選擇你最喜歡的影片二部,
+                                          ", by Amor",
+                                          " by Amor") %>%
+  str_c(sep = ", ", collapse = ", ") %>%
+  str_split(", ") %>% unlist %>%
+  as_tibble %>% 
+  as.factor 
+
+tot<-dim(voting_outcome)[1]
+voting_outcome$value %<>% as.factor()
+
+voting_outcome %>% group_by(value) %>%
+  summarise(支持率=n()/tot,票數=n()) %>%
+  arrange(desc(支持率)) -> support_rate 
+
+
+voting_outcome %>% group_by(value) %>%
+  summarise(支持率=n()/tot,票數=n()) %>%
+  arrange(desc(支持率)) -> support_rate 
+
+support_rate %>% kable(col.names = c("隊伍","得票率","票數")) 
+
+```
+
+
+## 輸出合格投票人名單
+
+```{r}
+valid_ballot %<>% as_tibble
+valid_ballot
+
+# 縮簡系級名稱
+valid_ballot %$% 
+  str_replace(系級,"經濟系","經") %>%
+  str_sub(start=1,end=3) -> valid_ballot$系級
+
+valid_ballot %>% select(系級,姓名.y) %>%
+  write.csv(file="./data/luckydrawlist.csv",quote=F,row.names=F,col.names = F)
+
+# library(WriteXLS)
+# library(writexl)
+# valid_ballot %>% select(系級,姓名.y) %>%
+#   write_xlsx(path = "./data/luckydrawlist.xlsx",col_names = F)
+```
+
+將csv名單貼到classdojo後，得進Display settings打開show last name，名字顯示才會完。
+
+## 得獎人名單
+```{r}
+valid_ballot %>% filter(姓名 %in% c("陳梓瑋","陳柔安","周祐誼",
+                                  "林哲皜","林書廷","黃馨儀")) %>%
+  select(姓名,系級,`Email Address`) %>% kable
+```
+
